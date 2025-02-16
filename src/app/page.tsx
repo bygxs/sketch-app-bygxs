@@ -1,101 +1,283 @@
-import Image from "next/image";
+"use client";
+import { useState, useRef, useEffect } from 'react';
 
-export default function Home() {
+/**
+ * Pen Icon Component
+ * @param selected - Boolean indicating if the pen tool is currently selected
+ * @returns SVG pen icon with conditional coloring
+ */
+const PenIcon = ({ selected }: { selected: boolean }) => (
+  <svg className={`w-6 h-6 ${selected ? 'text-blue-500' : 'text-gray-600'}`} 
+       fill="none" 
+       stroke="currentColor" 
+       viewBox="0 0 24 24">
+    <path strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth={2} 
+          d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+  </svg>
+);
+
+/**
+ * Eraser Icon Component
+ * @param selected - Boolean indicating if the eraser tool is currently selected
+ * @returns SVG eraser icon with conditional coloring
+ */
+const EraserIcon2 = ({ selected }: { selected: boolean }) => (
+  <svg className={`w-6 h-6 ${selected ? 'text-blue-500' : 'text-gray-600'}`} 
+       fill="none" 
+       stroke="currentColor" 
+       viewBox="0 0 24 24">
+    <path strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth={2} 
+          d="M6 18L18 6M6 6l12 12" />
+  </svg>
+
+);
+
+/**
+ * Eraser Icon Component
+ * @param selected - Boolean indicating if the eraser tool is currently selected
+ * @returns SVG eraser icon with conditional coloring
+ */
+ const EraserIcon = ({ selected }: { selected: boolean }) => (
+  <svg className={`w-6 h-6 ${selected ? 'text-blue-500' : 'text-gray-600'}`} 
+       fill="none" 
+       stroke="currentColor" 
+       viewBox="0 0 24 24">
+    <path strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth={2} 
+          d="M6.72 13.829l7.907-7.907 4.72 4.72-7.908 7.907m5.196-10.625L13.46 5.11 5.11 13.46l2.319 2.318m7.907-7.907-4.72-4.72-2.318 2.319 4.72 4.72" />
+  </svg>
+);
+
+
+
+
+/**
+ * Palette Icon Component
+ * @returns SVG palette icon for canvas color selection
+ */
+const PaletteIcon = () => (
+  <svg className="w-6 h-6 text-gray-600" 
+       fill="none" 
+       stroke="currentColor" 
+       viewBox="0 0 24 24">
+    <path strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth={2} 
+          d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12h4a4 4 0 01-4 4H7zM15 5a2 2 0 012-2h4a2 2 0 012 2v12h-4M7 7h.01M11 7h.01" />
+  </svg>
+);
+
+/**
+ * Save Icon Component
+ * @returns SVG save icon for export functionality
+ */
+const SaveIcon = () => (
+  <svg className="w-6 h-6 text-gray-600" 
+       fill="none" 
+       stroke="currentColor" 
+       viewBox="0 0 24 24">
+    <path strokeLinecap="round" 
+          strokeLinejoin="round" 
+          strokeWidth={2} 
+          d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+  </svg>
+);
+
+/**
+ * Main Drawing Page Component
+ * Implements canvas drawing functionality with tools and export
+ */
+export default function DrawingPage() {
+  // State Management
+  const [selectedTool, setSelectedTool] = useState('pen');
+  const [canvasColor, setCanvasColor] = useState('#897ACB');
+  const [penColor, setPenColor] = useState('#000000');
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
+
+  // Refs
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasColorInputRef = useRef<HTMLInputElement>(null);
+  const penColorInputRef = useRef<HTMLInputElement>(null);
+
+  // Canvas Setup Effect
+  useEffect(() => {
+    if (canvasRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      
+      if (ctx) {
+        // Configure drawing context
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        setContext(ctx);
+      }
+
+      // Set canvas dimensions to match display size
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+    }
+  }, []);
+
+  /** 
+   * Handles mouse/touch start events for drawing
+   * @param e - Mouse or touch event
+   */
+  const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
+    const { clientX, clientY } = 'touches' in e ? e.touches[0] : e;
+    
+    if (context && canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      context.beginPath();
+      context.moveTo(clientX - rect.left, clientY - rect.top);
+      setIsDrawing(true);
+    }
+  };
+
+  /** 
+   * Handles drawing motion events
+   * @param e - Mouse or touch event
+   */
+  const handleDraw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isDrawing || !context) return;
+    
+    const { clientX, clientY } = 'touches' in e ? e.touches[0] : e;
+    const rect = canvasRef.current!.getBoundingClientRect();
+    
+    // Set stroke properties based on selected tool
+    context.strokeStyle = selectedTool === 'eraser' ? canvasColor : penColor;
+    context.lineWidth = selectedTool === 'eraser' ? 20 : 5;
+    
+    // Draw line segment
+    context.lineTo(clientX - rect.left, clientY - rect.top);
+    context.stroke();
+  };
+
+  /** 
+   * Handles canvas background color change
+   * @param e - Color input change event
+   */
+  const handleCanvasColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCanvasColor(e.target.value);
+  };
+
+  /** 
+   * Handles pen color change
+   * @param e - Color input change event
+   */
+  const handlePenColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPenColor(e.target.value);
+  };
+
+  /** 
+   * Exports drawing as SVG file with embedded background
+   */
+  const saveAsSVG = () => {
+    if (!canvasRef.current) return;
+    
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const dataURL = canvas.toDataURL('image/png');
+    
+    // Construct SVG with background and drawing
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" 
+           width="${rect.width}" 
+           height="${rect.height}">
+        <rect width="100%" height="100%" fill="${canvasColor}"/>
+        <image href="${dataURL}" width="100%" height="100%"/>
+      </svg>
+    `;
+    
+    // Create downloadable file
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'drawing.svg';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
+    <div className="h-screen flex flex-col">
+      {/* Canvas Area */}
+      <div className="flex-1 relative" style={{ backgroundColor: canvasColor }}>
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full touch-none"
+          onMouseDown={startDrawing}
+          onMouseUp={() => setIsDrawing(false)}
+          onMouseMove={handleDraw}
+          onTouchStart={startDrawing}
+          onTouchEnd={() => setIsDrawing(false)}
+          onTouchMove={handleDraw}
         />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+      </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      {/* Fixed Bottom Toolbar */}
+      <div className="p-4 bg-gray-100 border-t flex gap-4 items-center justify-center">
+        {/* Pen Tool with Integrated Color Picker */}
+        <div className="relative">
+          <button
+            onClick={() => {
+              setSelectedTool('pen');
+              penColorInputRef.current?.click();
+            }}
+            className={`p-2 rounded-lg ${selectedTool === 'pen' ? 'bg-blue-100' : 'bg-white'}`}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+            <PenIcon selected={selectedTool === 'pen'} />
+          </button>
+          <input
+            type="color"
+            ref={penColorInputRef}
+            className="absolute opacity-0 w-0 h-0"
+            value={penColor}
+            onChange={handlePenColorChange}
+          />
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+
+        {/* Eraser Tool */}
+        <button
+          onClick={() => setSelectedTool('eraser')}
+          className={`p-2 rounded-lg ${selectedTool === 'eraser' ? 'bg-blue-100' : 'bg-white'}`}
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+          <EraserIcon selected={selectedTool === 'eraser'} />
+        </button>
+
+        {/* Canvas Color Picker */}
+        <div className="relative">
+          <button
+            onClick={() => canvasColorInputRef.current?.click()}
+            className="p-2 rounded-lg bg-white hover:bg-gray-50"
+          >
+            <PaletteIcon />
+          </button>
+          <input
+            type="color"
+            ref={canvasColorInputRef}
+            className="absolute opacity-0 w-0 h-0"
+            value={canvasColor}
+            onChange={handleCanvasColorChange}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        </div>
+
+        {/* Save Button */}
+        <button
+          onClick={saveAsSVG}
+          className="p-2 rounded-lg bg-white hover:bg-gray-50"
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <SaveIcon />
+        </button>
+      </div>
     </div>
   );
 }
