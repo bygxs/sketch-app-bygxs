@@ -164,17 +164,12 @@ export default function DrawingPage() {
     setPenColor(e.target.value);
   };
 
-  /**
-   * Exports drawing as SVG file with embedded background
-   * Ensures compatibility with mobile devices
-   */
   const saveAsSVG = () => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const dataURL = canvas.toDataURL("image/png");
 
-    // Construct SVG with background and drawing
     const svgContent = `
       <svg xmlns="http://www.w3.org/2000/svg" 
            width="${rect.width}" 
@@ -184,25 +179,29 @@ export default function DrawingPage() {
       </svg>
     `;
 
-    // Create a Blob from the SVG content
-    const blob = new Blob([svgContent], { type: "image/svg+xml;charset=utf-8" });
-
-    // Create a URL for the Blob
+    // Create Blob with proper MIME type
+    const blob = new Blob([svgContent], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
 
-    // Create a temporary anchor element to trigger the download
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "drawing.svg";
-    link.style.display = "none"; // Hide the anchor element
+    // Mobile-friendly download approach
+    if (navigator.userAgent.match(/Android|iPhone|iPad|iPod/i)) {
+      // For mobile: Open in new tab and let user manually save
+      const newWindow = window.open(url, "_blank");
+      if (newWindow) {
+        newWindow.onload = () => URL.revokeObjectURL(url);
+      }
+    } else {
+      // For desktop: Traditional download
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "drawing.svg";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
 
-    // Append the anchor element to the body and trigger the click event
-    document.body.appendChild(link);
-    link.click();
-
-    // Remove the anchor element and revoke the URL
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    // Cleanup memory after 1 minute
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   };
 
   return (
