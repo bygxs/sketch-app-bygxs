@@ -185,45 +185,22 @@ export default function DrawingPage() {
     `;
 
     // Create a Blob from the SVG content
-    const blob = new Blob(
-      [
-        new XMLSerializer().serializeToString(
-          new DOMParser().parseFromString(svgContent, "image/svg+xml")
-        ),
-      ],
-      { type: "image/svg+xml;charset=utf-8" }
-    );
+    const blob = new Blob([svgContent], { type: "image/svg+xml;charset=utf-8" });
 
-    // Check if the device supports the Web Share API
-    if (navigator.share && "files" in navigator.share) {
-      // Use Web Share API to share the file
-      navigator
-        .share({
-          files: [new File([blob], "drawing.svg", { type: "image/svg+xml" })],
-          title: "Share Drawing",
-          text: "Check out my drawing!",
-        })
-        .catch((error) => {
-          console.error("Web Share API failed:", error);
-          fallbackSave(blob);
-        });
-    } else {
-      // Fallback for browsers without Web Share API
-      fallbackSave(blob);
-    }
-  };
-
-  /**
-   * Fallback method to save the file manually
-   * @param blob - The file content as a Blob
-   */
-  const fallbackSave = (blob: Blob) => {
+    // Create a URL for the Blob
     const url = URL.createObjectURL(blob);
+
+    // Create a temporary anchor element to trigger the download
     const link = document.createElement("a");
     link.href = url;
     link.download = "drawing.svg";
+    link.style.display = "none"; // Hide the anchor element
+
+    // Append the anchor element to the body and trigger the click event
     document.body.appendChild(link);
     link.click();
+
+    // Remove the anchor element and revoke the URL
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
