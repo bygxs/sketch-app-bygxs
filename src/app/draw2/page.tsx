@@ -167,41 +167,57 @@ export default function DrawingPage() {
   const saveAsSVG = () => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
     const dataURL = canvas.toDataURL("image/png");
 
-    const svgContent = `
+    // Create SVG with embedded background
+    const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
       <svg xmlns="http://www.w3.org/2000/svg" 
-           width="${rect.width}" 
-           height="${rect.height}">
+           xmlns:xlink="http://www.w3.org/1999/xlink"
+           width="${canvas.width}" 
+           height="${canvas.height}">
         <rect width="100%" height="100%" fill="${canvasColor}"/>
-        <image href="${dataURL}" width="100%" height="100%"/>
-      </svg>
-    `;
+        <image xlink:href="${dataURL}" width="100%" height="100%"/>
+      </svg>`;
 
-    // Create Blob with proper MIME type
-    const blob = new Blob([svgContent], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
+    // Universal mobile handling
+    if (/(iPhone|iPad|iPod|Android)/i.test(navigator.userAgent)) {
+      // Solution 1: Direct file open with user guidance
+      const mobileUrl = URL.createObjectURL(
+        new Blob([svgContent], { type: "image/svg+xml" })
+      );
+      const newWindow = window.open(mobileUrl, "_blank");
 
-    // Mobile-friendly download approach
-    if (navigator.userAgent.match(/Android|iPhone|iPad|iPod/i)) {
-      // For mobile: Open in new tab and let user manually save
-      const newWindow = window.open(url, "_blank");
-      if (newWindow) {
-        newWindow.onload = () => URL.revokeObjectURL(url);
+      // Fallback if popup blocked
+      if (!newWindow) {
+        // Solution 2: Create temporary link with click simulation
+        const link = document.createElement("a");
+        link.href = mobileUrl;
+        link.target = "_blank";
+        link.style.display = "none";
+        document.body.appendChild(link);
+
+        // Show iOS-specific instructions
+        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+          alert(
+            '1. Tap the share icon\n2. Select "Save to Files"\n3. Choose location'
+          );
+        }
+        link.click();
+        document.body.removeChild(link);
       }
-    } else {
-      // For desktop: Traditional download
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "drawing.svg";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
 
-    // Cleanup memory after 1 minute
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+      // Cleanup after delay
+      setTimeout(() => URL.revokeObjectURL(mobileUrl), 30000);
+    } else {
+      // Desktop download
+      const link = document.createElement("a");
+      link.download = "drawing.svg";
+      link.href = URL.createObjectURL(
+        new Blob([svgContent], { type: "image/svg+xml" })
+      );
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
   };
 
   return (
