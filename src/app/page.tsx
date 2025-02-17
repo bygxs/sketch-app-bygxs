@@ -48,6 +48,15 @@ export default function Home() {
             </Link>
           </div>
 
+          <div>
+            <Link
+              href="/draw2"
+              className="inline-block px-6 py-3 bg-indigo-600 text-white font-semibold rounded-md shadow hover:bg-indigo-700 transition duration-200"
+            >
+              + draw2
+            </Link>
+          </div>
+
           {/* Notebooks Section */}
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
             Drawings
