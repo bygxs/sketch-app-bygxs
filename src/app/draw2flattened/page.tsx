@@ -281,19 +281,39 @@ canvas.height = 2808;
     }
   };
 
-  // Function to save canvas as JPEG
   const saveAsJPEG = () => {
     if (!canvasRef.current) return;
+  
     const canvas = canvasRef.current;
-
-    // Create a data URL of the canvas in JPEG format
-    const dataURL = canvas.toDataURL("image/jpeg", 0.9); // Quality set to 0.9 for better quality (range: 0-1)
-
-    // Create a temporary link to download the image
-    const link = document.createElement("a");
-    link.href = dataURL;
-    link.download = "drawing.jpg"; // Name of the file being saved
-    link.click();
+    const ctx = canvas.getContext("2d");
+  
+    // Create a new temporary canvas to combine background and drawing
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
+  
+    if (tempCtx) {
+      // Set the dimensions of the temporary canvas to match the original
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+  
+      // Fill the temporary canvas with the background color
+      tempCtx.fillStyle = canvasColor; 
+      tempCtx.fillRect(0, 0, canvas.width, canvas.height);
+  
+      // Draw the current canvas content (the drawing) over the background
+      const dataURL = canvas.toDataURL("image/png");
+      const tempImg = new Image();
+      tempImg.src = dataURL;
+      tempImg.onload = () => {
+        tempCtx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
+  
+        // Export the temporary canvas as a JPEG
+        const link = document.createElement("a");
+        link.href = tempCanvas.toDataURL("image/jpeg", 0.9); // Quality set to 0.9
+        link.download = "drawing.jpg"; 
+        link.click();
+      };
+    }
   };
 
   return (
