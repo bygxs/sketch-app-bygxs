@@ -242,7 +242,7 @@ export default function DrawingPage() {
 
       <div className="p-4 bg-gray-100 border-t flex gap-4 items-center justify-center">
         {/* Pen Tool with Mobile-friendly Color Picker */}
-        {/* Pen Tool with Color Picker */}
+       
         <label className="relative cursor-pointer">
           <input
             type="color"

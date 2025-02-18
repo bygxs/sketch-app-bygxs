@@ -176,7 +176,7 @@ export default function DrawingPage() {
            width="${canvas.width}" 
            height="${canvas.height}">
         <rect width="100%" height="100%" fill="${canvasColor}"/>
-        <image xlink:href="${dataURL}" width="100%" height="100%"/>
+        <image xlink:href="${dataURL}" width="100%" height="100%" preserveAspectRatio="none"/>
       </svg>`;
 
     // Universal mobile handling
