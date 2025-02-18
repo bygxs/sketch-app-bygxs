@@ -188,61 +188,81 @@ export default function DrawingPage() {
     };
   };
 
-  /**
-   * Save the current drawing as an SVG containing the PNG image
-   */
   const saveAsSVG = () => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    const dataURL = canvas.toDataURL("image/png"); // Capture current drawing as PNG
-
-    // Create SVG with embedded background and PNG image
-    const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
-      <svg xmlns="http://www.w3.org/2000/svg" 
-           xmlns:xlink="http://www.w3.org/1999/xlink"
-           width="${canvas.width}" 
-           height="${canvas.height}">
-        <rect width="100%" height="100%" fill="${canvasColor}"/>
-
-        <!-- Embedding the PNG image -->
-        <image xlink:href="${dataURL}" width="100%" height="100%" preserveAspectRatio="none"/>
-      </svg>`;
-
-    // Mobile handling for SVG download
-    if (/(iPhone|iPad|iPod|Android)/i.test(navigator.userAgent)) {
-      const mobileUrl = URL.createObjectURL(
-        new Blob([svgContent], { type: "image/svg+xml" })
-      );
-      const newWindow = window.open(mobileUrl, "_blank");
-
-      if (!newWindow) {
-        const link = document.createElement("a");
-        link.href = mobileUrl;
-        link.target = "_blank";
-        link.style.display = "none";
-        document.body.appendChild(link);
-
-        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-          alert(
-            '1. Tap the share icon\n2. Select "Save to Files"\n3. Choose location'
-          );
-        }
-        link.click();
-        document.body.removeChild(link);
+    const dataURL = canvas.toDataURL("image/png");
+  
+    // Create SVG with embedded background
+    const tempImg = new Image();
+    tempImg.src = dataURL;
+    
+    tempImg.onload = () => {
+      const imageAspectRatio = tempImg.width / tempImg.height; // Get the aspect ratio of the image
+  
+      // Calculate dimensions to preserve the aspect ratio
+      let imageWidth = canvas.width;
+      let imageHeight = canvas.height;
+      
+      // Adjust the image dimensions if width exceeds height
+      if (imageWidth / imageHeight > imageAspectRatio) {
+        imageWidth = imageHeight * imageAspectRatio; // Adjust width to match height
+      } else {
+        imageHeight = imageWidth / imageAspectRatio; // Adjust height to match width
       }
-
-      setTimeout(() => URL.revokeObjectURL(mobileUrl), 30000);
-    } else {
-      // Desktop download for SVG
-      const link = document.createElement("a");
-      link.download = "drawing.svg";
-      link.href = URL.createObjectURL(
-        new Blob([svgContent], { type: "image/svg+xml" })
-      );
-      link.click();
-      URL.revokeObjectURL(link.href);
-    }
+  
+      const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+        <svg xmlns="http://www.w3.org/2000/svg" 
+             xmlns:xlink="http://www.w3.org/1999/xlink"
+             width="${canvas.width}" 
+             height="${canvas.height}">
+          <rect width="100%" height="100%" fill="${canvasColor}"/>
+    
+          <image xlink:href="${dataURL}" 
+                 width="${imageWidth}" 
+                 height="${imageHeight}" 
+                 x="${(canvas.width - imageWidth) / 2}" 
+                 y="${(canvas.height - imageHeight) / 2}" 
+                 preserveAspectRatio="xMidYMid slice"/>
+        </svg>`;
+  
+      // Mobile handling for SVG download
+      if (/(iPhone|iPad|iPod|Android)/i.test(navigator.userAgent)) {
+        const mobileUrl = URL.createObjectURL(
+          new Blob([svgContent], { type: "image/svg+xml" })
+        );
+        const newWindow = window.open(mobileUrl, "_blank");
+  
+        if (!newWindow) {
+          const link = document.createElement("a");
+          link.href = mobileUrl;
+          link.target = "_blank";
+          link.style.display = "none";
+          document.body.appendChild(link);
+  
+          if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+            alert(
+              '1. Tap the share icon\n2. Select "Save to Files"\n3. Choose location'
+            );
+          }
+          link.click();
+          document.body.removeChild(link);
+        }
+  
+        setTimeout(() => URL.revokeObjectURL(mobileUrl), 30000);
+      } else {
+        // Desktop download for SVG
+        const link = document.createElement("a");
+        link.download = "drawing.svg";
+        link.href = URL.createObjectURL(
+          new Blob([svgContent], { type: "image/svg+xml" })
+        );
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+    };
   };
+  
 
   return (
     <div className="h-screen flex flex-col">
