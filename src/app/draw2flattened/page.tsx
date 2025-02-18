@@ -474,6 +474,75 @@ canvas.height = 2808;
     }
   };
 
+  /**
+   * SVG (Scalable Vector Graphics) is an XML-based vector image format used for defining two-dimensional
+   * graphics with support for interactivity and animation. Unlike raster formats (e.g., JPEG, PNG), SVG
+   * images are composed of paths, shapes, and text, allowing them to be scaled infinitely without loss
+   * of quality. This makes SVG ideal for responsive web design, logos, icons, and illustrations. SVG
+   * files are lightweight and can be manipulated via CSS and JavaScript, enabling dynamic and interactive
+   * graphics. Additionally, SVG supports features like transparency, gradients, and filters. However,
+   * complex SVG files can become large and may require optimization for performance in web applications.
+   */
+
+  const saveAsSVG2 = () => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    // Create a new temporary canvas to combine background and drawing
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
+
+    if (tempCtx) {
+      // Set the dimensions of the temporary canvas to match the original
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+
+      // First, fill the temporary canvas with the background color
+      tempCtx.fillStyle = canvasColor; // Use the selected background color
+      tempCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Now, draw the current canvas content (the drawing) over the background
+      const dataURL = canvas.toDataURL("image/png");
+      const tempImg = new Image();
+      tempImg.src = dataURL;
+      tempImg.onload = () => {
+        tempCtx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
+
+        // Convert the temporary canvas to an SVG with embedded PNG data
+        const svgContent = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="${
+            canvas.width
+          }" height="${canvas.height}">
+            <image href="${tempCanvas.toDataURL("image/png")}" width="${
+          canvas.width
+        }" height="${canvas.height}" />
+          </svg>
+        `;
+
+        // Create a Blob from the SVG content
+        const blob = new Blob(
+          [
+            new XMLSerializer().serializeToString(
+              new DOMParser().parseFromString(svgContent, "image/svg+xml")
+            ),
+          ],
+          { type: "image/svg+xml" }
+        );
+
+        // Create a temporary link to download the SVG file
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "drawing.svg"; // Name the downloaded file
+        link.click();
+
+        // Clean up the URL object after the download
+        setTimeout(() => URL.revokeObjectURL(link.href), 30000);
+      };
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col">
       {/* Canvas Area */}
@@ -585,6 +654,14 @@ canvas.height = 2808;
           className="p-2 rounded-lg bg-cyan-500 hover:bg-cyan-950"
         >
           💾 Base64
+        </button>
+
+        {/* Save as SVG */}
+        <button
+          onClick={saveAsSVG2}
+          className="p-2 rounded-lg bg-fuchsia-500 hover:bg-fuchsia-900"
+        >
+          💾 saveAsSVG2
         </button>
       </div>
     </div>
