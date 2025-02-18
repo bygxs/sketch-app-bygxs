@@ -380,6 +380,16 @@ canvas.height = 2808;
     }
   };
 
+  /**
+   * WebP is an image format developed by Google that provides both lossy and lossless compression
+   * for images on the web. It offers superior compression compared to traditional formats like JPEG
+   * and PNG, resulting in smaller file sizes while maintaining high quality. WebP supports alpha
+   * transparency, making it suitable for images with transparent backgrounds, and can also be used
+   * for animated images. While most modern browsers support WebP, some older browsers may not,
+   * so it's important to consider fallback options. WebP is ideal for optimizing web performance
+   * and reducing bandwidth usage while delivering high-quality visuals.
+   */
+
   const saveAsWebP = () => {
     if (!canvasRef.current) return;
 
@@ -411,6 +421,55 @@ canvas.height = 2808;
         link.href = tempCanvas.toDataURL("image/webp", 0.9); // Quality set to 0.9
         link.download = "drawing.webp"; // Name the downloaded file
         link.click();
+      };
+    }
+  };
+
+  /**
+   *Base64 String  It is commonly used to encode images,files, or other binary data for transmission over text-based protocols such as HTTP or email.
+   *  Base64 String is a binary-to-text encoding scheme that represents binary data in an ASCII string
+   * format by translating it into a radix-64 representation.Base64 encoding increases the size of
+   * the data by approximately 33%, but it allows for easy
+   * embedding of binary content directly within text files, such as HTML or CSS. This is particularly
+   * useful for including small images or files inline, reducing the number of HTTP requests needed
+   * for web pages. However, for larger files, it is generally more efficient to use standard file
+   * references instead of embedding them as Base64 strings.
+   */
+
+  const saveAsBase64String = () => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    // Create a new temporary canvas to combine background and drawing
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
+
+    if (tempCtx) {
+      // Set the dimensions of the temporary canvas to match the original
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+
+      // First, fill the temporary canvas with the background color
+      tempCtx.fillStyle = canvasColor; // Use the selected background color
+      tempCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Now, draw the current canvas content (the drawing) over the background
+      const dataURL = canvas.toDataURL("image/png");
+      const tempImg = new Image();
+      tempImg.src = dataURL;
+      tempImg.onload = () => {
+        tempCtx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
+
+        // Get the Base64 string of the temporary canvas
+        const base64String = tempCanvas.toDataURL("image/png");
+
+        // Log the Base64 string to the console (or handle it as needed)
+        console.log(base64String); // User can copy from here
+
+        // Optionally, you could also alert or display the string
+        alert("Base64 String Copied:\n" + base64String);
       };
     }
   };
@@ -518,6 +577,14 @@ canvas.height = 2808;
         >
           <SaveIcon />
           WEBP
+        </button>
+
+        {/* Save as Base64 String */}
+        <button
+          onClick={saveAsBase64String}
+          className="p-2 rounded-lg bg-cyan-500 hover:bg-cyan-950"
+        >
+          💾 Base64
         </button>
       </div>
     </div>
