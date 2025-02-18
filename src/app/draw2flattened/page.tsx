@@ -70,6 +70,19 @@ const SaveIcon = () => (
   </svg>
 );
 
+// Floppy Disk Icon Component
+const SaveBMPIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-6 w-6 text-gray-500 hover:text-blue-500"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth="2"
+    fill="none"
+  >
+    <path d="M5 5h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm10 12v-2a2 2 0 0 0-2-2H9l2-2h6a2 2 0 0 0 2 2v2h2v-2zm0-8H9l2-2h6v2z" />
+  </svg>
+);
 /**
  * Flattening the Canvas
  * @description: Captures the current drawing, redraws the background color, and flattens all drawing layers into one single canvas
@@ -283,6 +296,51 @@ canvas.height = 2808;
 
   const saveAsJPEG = () => {
     if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    // Create a new temporary canvas to combine background and drawing
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
+
+    if (tempCtx) {
+      // Set the dimensions of the temporary canvas to match the original
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+
+      // Fill the temporary canvas with the background color
+      tempCtx.fillStyle = canvasColor;
+      tempCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw the current canvas content (the drawing) over the background
+      const dataURL = canvas.toDataURL("image/png");
+      const tempImg = new Image();
+      tempImg.src = dataURL;
+      tempImg.onload = () => {
+        tempCtx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
+
+        // Export the temporary canvas as a JPEG
+        const link = document.createElement("a");
+        link.href = tempCanvas.toDataURL("image/jpeg", 0.9); // Quality set to 0.9
+        link.download = "drawing.jpg";
+        link.click();
+      };
+    }
+  };
+
+  /**
+ * BMP (Bitmap) is a raster graphics image file format that stores bitmap digital images.
+ * It is known for its simplicity and wide compatibility across platforms and applications.
+ * BMP files are typically uncompressed, preserving all image data without loss of quality,
+ * making them suitable for scenarios where image fidelity is critical, such as graphic design
+ * and medical imaging. However, BMP files tend to be larger in size compared to other formats
+ * like PNG or JPEG, which may not be ideal for web use or storage efficiency.
+ */
+
+
+  const saveAsBMP = () => {
+    if (!canvasRef.current) return;
   
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
@@ -296,22 +354,29 @@ canvas.height = 2808;
       tempCanvas.width = canvas.width;
       tempCanvas.height = canvas.height;
   
-      // Fill the temporary canvas with the background color
-      tempCtx.fillStyle = canvasColor; 
+      // First, fill the temporary canvas with the background color
+      tempCtx.fillStyle = canvasColor; // Use the selected background color
       tempCtx.fillRect(0, 0, canvas.width, canvas.height);
   
-      // Draw the current canvas content (the drawing) over the background
+      // Now, draw the current canvas content (the drawing) over the background
       const dataURL = canvas.toDataURL("image/png");
       const tempImg = new Image();
       tempImg.src = dataURL;
       tempImg.onload = () => {
         tempCtx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
   
-        // Export the temporary canvas as a JPEG
-        const link = document.createElement("a");
-        link.href = tempCanvas.toDataURL("image/jpeg", 0.9); // Quality set to 0.9
-        link.download = "drawing.jpg"; 
-        link.click();
+        // Export the temporary canvas as a BMP file
+        tempCanvas.toBlob((blob) => {
+          if (blob) {
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "drawing.bmp"; // Name the downloaded file
+            link.click();
+  
+            // Clean up the URL object after the download
+            setTimeout(() => URL.revokeObjectURL(link.href), 30000);
+          }
+        }, "image/bmp");
       };
     }
   };
@@ -402,6 +467,14 @@ canvas.height = 2808;
           className="p-2 rounded-lg bg-green-500  hover:bg-gray-50"
         >
           💾JPEG
+        </button>
+        {/* Save as BMP */}
+        <button
+          onClick={saveAsBMP}
+          className="p-2 rounded-lg bg-pink-300 hover:bg-pink-900"
+        >
+          <SaveBMPIcon />
+          BMP
         </button>
       </div>
     </div>
