@@ -223,7 +223,24 @@ export default function DrawingPage() {
   return (
     <div className="h-screen flex flex-col">
       {/* Canvas Area */}
-      <div className="flex-1 relative" style={{ backgroundColor: canvasColor }}>
+      {/* 
+        Canvas Container 
+        - Uses padding-bottom to account for fixed toolbar height + safe area
+        - Applies dynamic background color from state
+      */}
+      <div
+        className="flex-1 relative pb-[84px]"
+        style={{
+          backgroundColor: canvasColor,
+          // Safari/iOS fix: Adds bottom padding for home indicator
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
+      >
+        {/* 
+          Canvas Element 
+          - Uses touch-none to prevent default touch behaviors
+          - Full width/height of container
+        */}
         <canvas
           ref={canvasRef}
           className="w-full h-full touch-none"
@@ -235,9 +252,23 @@ export default function DrawingPage() {
           onTouchMove={handleDraw}
         />
       </div>
-      {/* Fixed Bottom Toolbar */}
-      <div className="p-4 bg-gray-100 border-t flex gap-4 items-center justify-center">
-        {/* Pen Tool with Mobile-friendly Color Picker */}
+
+      {/* 
+        Fixed Bottom Toolbar 
+        - Uses fixed positioning to stay visible
+        - Accounts for iOS home indicator with safe-area-inset
+        - Height matches container padding-bottom (84px)
+      */}
+      <div
+        className="fixed bottom-0 left-0 right-0 p-4 bg-gray-100 border-t flex gap-4 items-center justify-center"
+        style={{
+          // Safari/iOS fix: Adds bottom padding for home indicator
+          paddingBottom: "env(safe-area-inset-bottom)",
+          // Explicit height matching container's padding-bottom
+          height: "84px",
+        }}
+      >
+        {/* Pen Tool */}
         <label className="relative cursor-pointer">
           <input
             type="color"
@@ -246,6 +277,7 @@ export default function DrawingPage() {
             value={penColor}
             onChange={handlePenColorChange}
           />
+
           <div
             onClick={() => setSelectedTool("pen")}
             className={`p-2 rounded-lg ${
@@ -255,6 +287,7 @@ export default function DrawingPage() {
             <PenIcon selected={selectedTool === "pen"} />
           </div>
         </label>
+
         {/* Canvas Color Picker (existing working version) */}
         <label className="relative cursor-pointer">
           <input
@@ -268,6 +301,7 @@ export default function DrawingPage() {
             <PaletteIcon />
           </div>
         </label>
+
         {/* Eraser Tool (unchanged) */}
         <button
           onClick={() => setSelectedTool("eraser")}
@@ -277,9 +311,11 @@ export default function DrawingPage() {
         >
           <EraserIcon selected={selectedTool === "eraser"} />
         </button>
-        {/* Save Button (unchanged) */}
+
+        {/* Save Button */}
         <button
           onClick={saveAsSVG}
+          onTouchEnd={saveAsSVG} // Mobile touch support
           className="p-2 rounded-lg bg-white hover:bg-gray-50"
         >
           <SaveIcon />
