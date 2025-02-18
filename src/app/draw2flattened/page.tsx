@@ -281,6 +281,21 @@ canvas.height = 2808;
     }
   };
 
+  // Function to save canvas as JPEG
+  const saveAsJPEG = () => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+
+    // Create a data URL of the canvas in JPEG format
+    const dataURL = canvas.toDataURL("image/jpeg", 0.9); // Quality set to 0.9 for better quality (range: 0-1)
+
+    // Create a temporary link to download the image
+    const link = document.createElement("a");
+    link.href = dataURL;
+    link.download = "drawing.jpg"; // Name of the file being saved
+    link.click();
+  };
+
   return (
     <div className="h-screen flex flex-col">
       {/* Canvas Area */}
@@ -328,7 +343,6 @@ canvas.height = 2808;
             <PenIcon selected={selectedTool === "pen"} />
           </div>
         </label>
-
         <label className="relative cursor-pointer">
           <input
             type="color"
@@ -341,7 +355,6 @@ canvas.height = 2808;
             <PaletteIcon />
           </div>
         </label>
-
         <button
           onClick={() => setSelectedTool("eraser")}
           className={`p-2 rounded-lg ${
@@ -350,7 +363,6 @@ canvas.height = 2808;
         >
           <EraserIcon selected={selectedTool === "eraser"} />
         </button>
-
         <button
           onClick={saveAsSVG}
           onTouchEnd={saveAsSVG} // Mobile touch support
@@ -358,12 +370,18 @@ canvas.height = 2808;
         >
           <SaveIcon />
         </button>
-
         <button
           onClick={saveAsPNG} // Trigger saveAsPNG function
           className="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
         >
-          Save as PNG
+          💾PNG
+        </button>
+
+        <button
+          onClick={saveAsJPEG} // Trigger saveAsJPEG when clicked
+          className="p-2 rounded-lg bg-green-500  hover:bg-gray-50"
+        >
+          💾JPEG
         </button>
       </div>
     </div>
