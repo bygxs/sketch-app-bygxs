@@ -1,14 +1,8 @@
-// src/app/draw2/page.tsx
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
 
-/**
- * Pen Icon Component
- * @param selected - Boolean indicating if the pen tool is currently selected
- * @returns SVG pen icon with conditional coloring
- */
+// Pen Icon Component
 const PenIcon = ({ selected }: { selected: boolean }) => (
   <svg
     className={`w-6 h-6 ${selected ? "text-blue-500" : "text-gray-600"}`}
@@ -25,11 +19,7 @@ const PenIcon = ({ selected }: { selected: boolean }) => (
   </svg>
 );
 
-/**
- * Eraser Icon Component
- * @param selected - Boolean indicating if the eraser tool is currently selected
- * @returns SVG eraser icon with conditional coloring
- */
+// Eraser Icon Component
 const EraserIcon = ({ selected }: { selected: boolean }) => (
   <svg
     className={`w-6 h-6 ${selected ? "text-blue-500" : "text-gray-600"}`}
@@ -46,10 +36,7 @@ const EraserIcon = ({ selected }: { selected: boolean }) => (
   </svg>
 );
 
-/**
- * Palette Icon Component
- * @returns SVG palette icon for canvas color selection
- */
+// Palette Icon Component
 const PaletteIcon = () => (
   <svg
     className="w-6 h-6 text-gray-600"
@@ -66,10 +53,7 @@ const PaletteIcon = () => (
   </svg>
 );
 
-/**
- * Save Icon Component
- * @returns SVG save icon for export functionality
- */
+// Save Icon Component
 const SaveIcon = () => (
   <svg
     className="w-6 h-6 text-gray-600"
@@ -85,6 +69,30 @@ const SaveIcon = () => (
     />
   </svg>
 );
+
+/**
+ * Flattening the Canvas
+ * @description: Captures the current drawing, redraws the background color, and flattens all drawing layers into one single canvas
+ */
+const flattenCanvas = (
+  canvasRef: React.RefObject<HTMLCanvasElement>,
+  canvasColor: string
+) => {
+  if (!canvasRef.current) return;
+  const canvas = canvasRef.current;
+  const ctx = canvas.getContext("2d");
+
+  // Draw background first
+  ctx!.fillStyle = canvasColor;
+  ctx!.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw the existing image over it (flatten the image)
+  const tempImg = new Image();
+  tempImg.src = canvas.toDataURL("image/png"); // Capture current drawing as a PNG
+  tempImg.onload = () => {
+    ctx!.drawImage(tempImg, 0, 0, canvas.width, canvas.height); // Redraw it as a single layer
+  };
+};
 
 /**
  * Main Drawing Page Component
@@ -117,6 +125,15 @@ export default function DrawingPage() {
       // Set canvas dimensions to match display size
       canvas.width = canvas.clientWidth;
       canvas.height = canvas.clientHeight;
+
+      /*  To set the canvas size to represent a 52-inch TV screen 
+     (1.32m by 0.74m) at a 96 PPI, 
+     the canvas dimensions in pixels would be: */
+
+      /*  canvas.width = 4992;
+canvas.height = 2808;
+
+*/
     }
   }, []);
 
@@ -167,102 +184,102 @@ export default function DrawingPage() {
   };
 
   /**
-   * Flattens the canvas by drawing the background first and then the content
-   * @returns void
-   * This function captures the current drawing and adds it to the background
+   * Save the current drawing as an SVG
+   * @description: Calls flattenCanvas() to ensure the drawing is flattened before export
    */
-  const flattenCanvas = () => {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-
-    // Draw background first
-    ctx.fillStyle = canvasColor;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Draw the existing image over it
-    const tempImg = new Image();
-    tempImg.src = canvas.toDataURL("image/png"); // Capture current drawing
-    tempImg.onload = () => {
-      ctx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
-    };
-  };
-
   const saveAsSVG = () => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
+    flattenCanvas(canvasRef, canvasColor); // Pass canvasRef to flattenCanvas
+
     const dataURL = canvas.toDataURL("image/png");
-  
+
     // Create SVG with embedded background
-    const tempImg = new Image();
-    tempImg.src = dataURL;
-    
-    tempImg.onload = () => {
-      const imageAspectRatio = tempImg.width / tempImg.height; // Get the aspect ratio of the image
-  
-      // Calculate dimensions to preserve the aspect ratio
-      let imageWidth = canvas.width;
-      let imageHeight = canvas.height;
-      
-      // Adjust the image dimensions if width exceeds height
-      if (imageWidth / imageHeight > imageAspectRatio) {
-        imageWidth = imageHeight * imageAspectRatio; // Adjust width to match height
-      } else {
-        imageHeight = imageWidth / imageAspectRatio; // Adjust height to match width
-      }
-  
-      const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
-        <svg xmlns="http://www.w3.org/2000/svg" 
-             xmlns:xlink="http://www.w3.org/1999/xlink"
-             width="${canvas.width}" 
-             height="${canvas.height}">
-          <rect width="100%" height="100%" fill="${canvasColor}"/>
-    
-          <image xlink:href="${dataURL}" 
-                 width="${imageWidth}" 
-                 height="${imageHeight}" 
-                 x="${(canvas.width - imageWidth) / 2}" 
-                 y="${(canvas.height - imageHeight) / 2}" 
-                 preserveAspectRatio="xMidYMid slice"/>
-        </svg>`;
-  
-      // Mobile handling for SVG download
-      if (/(iPhone|iPad|iPod|Android)/i.test(navigator.userAgent)) {
-        const mobileUrl = URL.createObjectURL(
-          new Blob([svgContent], { type: "image/svg+xml" })
-        );
-        const newWindow = window.open(mobileUrl, "_blank");
-  
-        if (!newWindow) {
-          const link = document.createElement("a");
-          link.href = mobileUrl;
-          link.target = "_blank";
-          link.style.display = "none";
-          document.body.appendChild(link);
-  
-          if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-            alert(
-              '1. Tap the share icon\n2. Select "Save to Files"\n3. Choose location'
-            );
-          }
-          link.click();
-          document.body.removeChild(link);
-        }
-  
-        setTimeout(() => URL.revokeObjectURL(mobileUrl), 30000);
-      } else {
-        // Desktop download for SVG
+    const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+      <svg xmlns="http://www.w3.org/2000/svg" 
+           xmlns:xlink="http://www.w3.org/1999/xlink"
+           width="${canvas.width}" 
+           height="${canvas.height}">
+        <rect width="100%" height="100%" fill="${canvasColor}"/>
+        <!-- Embedding the PNG image -->
+        <image xlink:href="${dataURL}" width="100%" height="100%" preserveAspectRatio="none"/>
+      </svg>`;
+
+    // Universal mobile handling
+    if (/(iPhone|iPad|iPod|Android)/i.test(navigator.userAgent)) {
+      const mobileUrl = URL.createObjectURL(
+        new Blob([svgContent], { type: "image/svg+xml" })
+      );
+      const newWindow = window.open(mobileUrl, "_blank");
+
+      // Fallback if popup blocked
+      if (!newWindow) {
         const link = document.createElement("a");
-        link.download = "drawing.svg";
-        link.href = URL.createObjectURL(
-          new Blob([svgContent], { type: "image/svg+xml" })
-        );
+        link.href = mobileUrl;
+        link.target = "_blank";
+        link.style.display = "none";
+        document.body.appendChild(link);
+
+        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+          alert(
+            '1. Tap the share icon\n2. Select "Save to Files"\n3. Choose location'
+          );
+        }
         link.click();
-        URL.revokeObjectURL(link.href);
+        document.body.removeChild(link);
       }
-    };
+
+      // Cleanup after delay
+      setTimeout(() => URL.revokeObjectURL(mobileUrl), 30000);
+    } else {
+      // Desktop download
+      const link = document.createElement("a");
+      link.download = "drawing.svg";
+      link.href = URL.createObjectURL(
+        new Blob([svgContent], { type: "image/svg+xml" })
+      );
+      link.click();
+      URL.revokeObjectURL(link.href);
+    }
   };
-  
+
+  /**
+   * Saves the canvas as a PNG image, including the background and the drawing.
+   */
+  const saveAsPNG = () => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    // Create a new temporary canvas to combine background and drawing
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
+
+    if (tempCtx) {
+      // Set the dimensions of the temporary canvas to match the original
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+
+      // First, fill the temporary canvas with the background color (or the ground)
+      tempCtx.fillStyle = canvasColor; // Use the selected background color
+      tempCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Now, draw the current canvas content (the drawing) over the background
+      const dataURL = canvas.toDataURL("image/png");
+      const tempImg = new Image();
+      tempImg.src = dataURL;
+      tempImg.onload = () => {
+        tempCtx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
+
+        // Now we can download the image as PNG
+        const link = document.createElement("a");
+        link.href = tempCanvas.toDataURL("image/png");
+        link.download = "drawing.png"; // Name the downloaded file
+        link.click();
+      };
+    }
+  };
 
   return (
     <div className="h-screen flex flex-col">
@@ -286,7 +303,7 @@ export default function DrawingPage() {
         />
       </div>
 
-      {/* Fixed Bottom Toolbar */}
+      {/* Bottom Toolbar */}
       <div
         className="fixed bottom-0 left-0 right-0 p-4 bg-gray-100 border-t flex gap-4 items-center justify-center"
         style={{
@@ -294,7 +311,6 @@ export default function DrawingPage() {
           height: "84px",
         }}
       >
-        {/* Pen Tool */}
         <label className="relative cursor-pointer">
           <input
             type="color"
@@ -313,7 +329,6 @@ export default function DrawingPage() {
           </div>
         </label>
 
-        {/* Canvas Color Picker */}
         <label className="relative cursor-pointer">
           <input
             type="color"
@@ -327,7 +342,6 @@ export default function DrawingPage() {
           </div>
         </label>
 
-        {/* Eraser Tool */}
         <button
           onClick={() => setSelectedTool("eraser")}
           className={`p-2 rounded-lg ${
@@ -337,13 +351,19 @@ export default function DrawingPage() {
           <EraserIcon selected={selectedTool === "eraser"} />
         </button>
 
-        {/* Save Button */}
         <button
           onClick={saveAsSVG}
-          onTouchEnd={saveAsSVG}
+          onTouchEnd={saveAsSVG} // Mobile touch support
           className="p-2 rounded-lg bg-white hover:bg-gray-50"
         >
           <SaveIcon />
+        </button>
+
+        <button
+          onClick={saveAsPNG} // Trigger saveAsPNG function
+          className="p-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600"
+        >
+          Save as PNG
         </button>
       </div>
     </div>
