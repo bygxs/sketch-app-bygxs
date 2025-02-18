@@ -330,41 +330,40 @@ canvas.height = 2808;
   };
 
   /**
- * BMP (Bitmap) is a raster graphics image file format that stores bitmap digital images.
- * It is known for its simplicity and wide compatibility across platforms and applications.
- * BMP files are typically uncompressed, preserving all image data without loss of quality,
- * making them suitable for scenarios where image fidelity is critical, such as graphic design
- * and medical imaging. However, BMP files tend to be larger in size compared to other formats
- * like PNG or JPEG, which may not be ideal for web use or storage efficiency.
- */
-
+   * BMP (Bitmap) is a raster graphics image file format that stores bitmap digital images.
+   * It is known for its simplicity and wide compatibility across platforms and applications.
+   * BMP files are typically uncompressed, preserving all image data without loss of quality,
+   * making them suitable for scenarios where image fidelity is critical, such as graphic design
+   * and medical imaging. However, BMP files tend to be larger in size compared to other formats
+   * like PNG or JPEG, which may not be ideal for web use or storage efficiency.
+   */
 
   const saveAsBMP = () => {
     if (!canvasRef.current) return;
-  
+
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-  
+
     // Create a new temporary canvas to combine background and drawing
     const tempCanvas = document.createElement("canvas");
     const tempCtx = tempCanvas.getContext("2d");
-  
+
     if (tempCtx) {
       // Set the dimensions of the temporary canvas to match the original
       tempCanvas.width = canvas.width;
       tempCanvas.height = canvas.height;
-  
+
       // First, fill the temporary canvas with the background color
       tempCtx.fillStyle = canvasColor; // Use the selected background color
       tempCtx.fillRect(0, 0, canvas.width, canvas.height);
-  
+
       // Now, draw the current canvas content (the drawing) over the background
       const dataURL = canvas.toDataURL("image/png");
       const tempImg = new Image();
       tempImg.src = dataURL;
       tempImg.onload = () => {
         tempCtx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
-  
+
         // Export the temporary canvas as a BMP file
         tempCanvas.toBlob((blob) => {
           if (blob) {
@@ -372,11 +371,46 @@ canvas.height = 2808;
             link.href = URL.createObjectURL(blob);
             link.download = "drawing.bmp"; // Name the downloaded file
             link.click();
-  
+
             // Clean up the URL object after the download
             setTimeout(() => URL.revokeObjectURL(link.href), 30000);
           }
         }, "image/bmp");
+      };
+    }
+  };
+
+  const saveAsWebP = () => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    // Create a new temporary canvas to combine background and drawing
+    const tempCanvas = document.createElement("canvas");
+    const tempCtx = tempCanvas.getContext("2d");
+
+    if (tempCtx) {
+      // Set the dimensions of the temporary canvas to match the original
+      tempCanvas.width = canvas.width;
+      tempCanvas.height = canvas.height;
+
+      // First, fill the temporary canvas with the background color
+      tempCtx.fillStyle = canvasColor; // Use the selected background color
+      tempCtx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Now, draw the current canvas content (the drawing) over the background
+      const dataURL = canvas.toDataURL("image/png");
+      const tempImg = new Image();
+      tempImg.src = dataURL;
+      tempImg.onload = () => {
+        tempCtx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
+
+        // Export the temporary canvas as a WebP file with quality set to 0.9
+        const link = document.createElement("a");
+        link.href = tempCanvas.toDataURL("image/webp", 0.9); // Quality set to 0.9
+        link.download = "drawing.webp"; // Name the downloaded file
+        link.click();
       };
     }
   };
@@ -475,6 +509,15 @@ canvas.height = 2808;
         >
           <SaveBMPIcon />
           BMP
+        </button>
+
+        {/* Save as WebP */}
+        <button
+          onClick={saveAsWebP}
+          className="p-2 rounded-lg bg-indigo-500 hover:bg-indigo-900"
+        >
+          <SaveIcon />
+          WEBP
         </button>
       </div>
     </div>
