@@ -1,15 +1,8 @@
-
-// src/app/draw2/page.tsx
-
 "use client";
 
 import { useState, useRef, useEffect } from "react";
 
-/**
- * Pen Icon Component
- * @param selected - Boolean indicating if the pen tool is currently selected
- * @returns SVG pen icon with conditional coloring
- */
+// Pen Icon Component
 const PenIcon = ({ selected }: { selected: boolean }) => (
   <svg
     className={`w-6 h-6 ${selected ? "text-blue-500" : "text-gray-600"}`}
@@ -26,11 +19,7 @@ const PenIcon = ({ selected }: { selected: boolean }) => (
   </svg>
 );
 
-/**
- * Eraser Icon Component
- * @param selected - Boolean indicating if the eraser tool is currently selected
- * @returns SVG eraser icon with conditional coloring
- */
+// Eraser Icon Component
 const EraserIcon = ({ selected }: { selected: boolean }) => (
   <svg
     className={`w-6 h-6 ${selected ? "text-blue-500" : "text-gray-600"}`}
@@ -47,10 +36,7 @@ const EraserIcon = ({ selected }: { selected: boolean }) => (
   </svg>
 );
 
-/**
- * Palette Icon Component
- * @returns SVG palette icon for canvas color selection
- */
+// Palette Icon Component
 const PaletteIcon = () => (
   <svg
     className="w-6 h-6 text-gray-600"
@@ -67,10 +53,7 @@ const PaletteIcon = () => (
   </svg>
 );
 
-/**
- * Save Icon Component
- * @returns SVG save icon for export functionality
- */
+// Save Icon Component
 const SaveIcon = () => (
   <svg
     className="w-6 h-6 text-gray-600"
@@ -87,44 +70,31 @@ const SaveIcon = () => (
   </svg>
 );
 
-/**
- * Main Drawing Page Component
- * Implements canvas drawing functionality with tools and export
- */
 export default function DrawingPage() {
-  // State Management
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [selectedTool, setSelectedTool] = useState<"pen" | "eraser">("pen");
   const [canvasColor, setCanvasColor] = useState("#897ACB");
   const [penColor, setPenColor] = useState("#000000");
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
 
-  // Refs
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const canvasColorInputRef = useRef<HTMLInputElement>(null);
-  const penColorInputRef = useRef<HTMLInputElement>(null);
-
-  // Canvas Setup Effect
+  // Canvas setup effect
   useEffect(() => {
     if (canvasRef.current) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
       if (ctx) {
-        // Configure drawing context
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
         setContext(ctx);
       }
-      // Set canvas dimensions to match display size
       canvas.width = canvas.clientWidth;
       canvas.height = canvas.clientHeight;
     }
   }, []);
 
-  /**
-   * Handles mouse/touch start events for drawing
-   * @param e - Mouse or touch event
-   */
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
     const { clientX, clientY } = "touches" in e ? e.touches[0] : e;
     if (context && canvasRef.current) {
@@ -135,119 +105,105 @@ export default function DrawingPage() {
     }
   };
 
-  /**
-   * Handles drawing motion events
-   * @param e - Mouse or touch event
-   */
   const handleDraw = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing || !context) return;
     const { clientX, clientY } = "touches" in e ? e.touches[0] : e;
     const rect = canvasRef.current!.getBoundingClientRect();
-    // Set stroke properties based on selected tool
     context.strokeStyle = selectedTool === "eraser" ? canvasColor : penColor;
     context.lineWidth = selectedTool === "eraser" ? 20 : 5;
-    // Draw line segment
     context.lineTo(clientX - rect.left, clientY - rect.top);
     context.stroke();
   };
 
-  /**
-   * Handles canvas background color change
-   * @param e - Color input change event
-   */
   const handleCanvasColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCanvasColor(e.target.value);
   };
 
-  /**
-   * Handles pen color change
-   * @param e - Color input change event
-   */
   const handlePenColorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setPenColor(e.target.value);
+  };
+
+  const saveCanvasState = () => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const snapshot = canvas.toDataURL();
+    setHistory((prevHistory) => {
+      const newHistory = [
+        ...prevHistory.slice(0, historyIndex + 1),
+        snapshot,
+      ];
+      if (newHistory.length > 50) newHistory.shift();
+      return newHistory;
+    });
+    setHistoryIndex(historyIndex + 1);
+  };
+
+  const undo = () => {
+    if (historyIndex > 0) {
+      setHistoryIndex(historyIndex - 1);
+      const previousState = history[historyIndex - 1];
+      loadCanvasState(previousState);
+    }
+  };
+
+  const redo = () => {
+    if (historyIndex < history.length - 1) {
+      setHistoryIndex(historyIndex + 1);
+      const nextState = history[historyIndex + 1];
+      loadCanvasState(nextState);
+    }
+  };
+
+  const loadCanvasState = (state: string) => {
+    const img = new Image();
+    img.src = state;
+    img.onload = () => {
+      const ctx = canvasRef.current?.getContext("2d");
+      ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      ctx?.drawImage(img, 0, 0);
+    };
+  };
+
+  const saveAsPNG = () => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const dataURL = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.download = "drawing.png";
+    link.href = dataURL;
+    link.click();
   };
 
   const saveAsSVG = () => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
     const dataURL = canvas.toDataURL("image/png");
-
-    // Create SVG with embedded background
     const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
       <svg xmlns="http://www.w3.org/2000/svg" 
            xmlns:xlink="http://www.w3.org/1999/xlink"
            width="${canvas.width}" 
            height="${canvas.height}">
         <rect width="100%" height="100%" fill="${canvasColor}"/>
-
-        /* 	1.	Ensure the PNG covers the full canvas before saving by redrawing the background.
-	2.	Explicitly set preserveAspectRatio="none" in the <image> tag to stretch it edge-to-edge */
-  
         <image xlink:href="${dataURL}" width="100%" height="100%" preserveAspectRatio="none"/>
       </svg>`;
-
-    // Universal mobile handling
-    if (/(iPhone|iPad|iPod|Android)/i.test(navigator.userAgent)) {
-      // Solution 1: Direct file open with user guidance
-      const mobileUrl = URL.createObjectURL(
-        new Blob([svgContent], { type: "image/svg+xml" })
-      );
-      const newWindow = window.open(mobileUrl, "_blank");
-
-      // Fallback if popup blocked
-      if (!newWindow) {
-        // Solution 2: Create temporary link with click simulation
-        const link = document.createElement("a");
-        link.href = mobileUrl;
-        link.target = "_blank";
-        link.style.display = "none";
-        document.body.appendChild(link);
-
-        // Show iOS-specific instructions
-        if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-          alert(
-            '1. Tap the share icon\n2. Select "Save to Files"\n3. Choose location'
-          );
-        }
-        link.click();
-        document.body.removeChild(link);
-      }
-
-      // Cleanup after delay
-      setTimeout(() => URL.revokeObjectURL(mobileUrl), 30000);
-    } else {
-      // Desktop download
-      const link = document.createElement("a");
-      link.download = "drawing.svg";
-      link.href = URL.createObjectURL(
-        new Blob([svgContent], { type: "image/svg+xml" })
-      );
-      link.click();
-      URL.revokeObjectURL(link.href);
-    }
+    const link = document.createElement("a");
+    link.download = "drawing.svg";
+    link.href = URL.createObjectURL(
+      new Blob([svgContent], { type: "image/svg+xml" })
+    );
+    link.click();
   };
 
   return (
     <div className="h-screen flex flex-col">
       {/* Canvas Area */}
-      {/* 
-        Canvas Container 
-        - Uses padding-bottom to account for fixed toolbar height + safe area
-        - Applies dynamic background color from state
-      */}
       <div
         className="flex-1 relative pb-[84px]"
         style={{
           backgroundColor: canvasColor,
-          // Safari/iOS fix: Adds bottom padding for home indicator
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
-        {/* 
-          Canvas Element 
-          - Uses touch-none to prevent default touch behaviors
-          - Full width/height of container
-        */}
         <canvas
           ref={canvasRef}
           className="w-full h-full touch-none"
@@ -260,18 +216,11 @@ export default function DrawingPage() {
         />
       </div>
 
-      {/* 
-        Fixed Bottom Toolbar 
-        - Uses fixed positioning to stay visible
-        - Accounts for iOS home indicator with safe-area-inset
-        - Height matches container padding-bottom (84px)
-      */}
+      {/* Bottom Toolbar */}
       <div
         className="fixed bottom-0 left-0 right-0 p-4 bg-gray-100 border-t flex gap-4 items-center justify-center"
         style={{
-          // Safari/iOS fix: Adds bottom padding for home indicator
           paddingBottom: "env(safe-area-inset-bottom)",
-          // Explicit height matching container's padding-bottom
           height: "84px",
         }}
       >
@@ -279,12 +228,10 @@ export default function DrawingPage() {
         <label className="relative cursor-pointer">
           <input
             type="color"
-            ref={penColorInputRef}
             className="absolute opacity-0 w-0 h-0"
             value={penColor}
             onChange={handlePenColorChange}
           />
-
           <div
             onClick={() => setSelectedTool("pen")}
             className={`p-2 rounded-lg ${
@@ -295,11 +242,10 @@ export default function DrawingPage() {
           </div>
         </label>
 
-        {/* Canvas Color Picker (existing working version) */}
+        {/* Canvas Color Picker */}
         <label className="relative cursor-pointer">
           <input
             type="color"
-            ref={canvasColorInputRef}
             className="absolute opacity-0 w-0 h-0"
             value={canvasColor}
             onChange={handleCanvasColorChange}
@@ -309,7 +255,7 @@ export default function DrawingPage() {
           </div>
         </label>
 
-        {/* Eraser Tool (unchanged) */}
+        {/* Eraser Tool */}
         <button
           onClick={() => setSelectedTool("eraser")}
           className={`p-2 rounded-lg ${
@@ -320,12 +266,16 @@ export default function DrawingPage() {
         </button>
 
         {/* Save Button */}
-        <button
-          onClick={saveAsSVG}
-          onTouchEnd={saveAsSVG} // Mobile touch support
-          className="p-2 rounded-lg bg-white hover:bg-gray-50"
-        >
+        <button onClick={saveAsPNG} className="p-2 rounded-lg bg-white hover:bg-gray-50">
           <SaveIcon />
+        </button>
+
+        {/* Undo/Redo Buttons */}
+        <button onClick={undo} className="p-2 rounded-lg bg-white hover:bg-gray-50">
+          Undo
+        </button>
+        <button onClick={redo} className="p-2 rounded-lg bg-white hover:bg-gray-50">
+          Redo
         </button>
       </div>
     </div>

@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 
 export default function Home() {
@@ -41,10 +43,28 @@ export default function Home() {
 
           <div>
             <Link
-              href="/drawing"
+              href="/draw2flattened"
               className="inline-block px-6 py-3 bg-indigo-600 text-white font-semibold rounded-md shadow hover:bg-indigo-700 transition duration-200"
             >
-              + New Drawing
+              + draw2flattened
+            </Link>
+          </div>
+
+          <div>
+            <Link
+              href="/drawRush"
+              className="inline-block px-6 py-3 bg-indigo-600 text-white font-semibold rounded-md shadow hover:bg-indigo-700 transition duration-200"
+            >
+              + draw RUSH
+            </Link>
+          </div>
+
+          <div>
+            <Link
+              href="/drawExport"
+              className="inline-block px-6 py-3 bg-indigo-600 text-white font-semibold rounded-md shadow hover:bg-indigo-700 transition duration-200"
+            >
+              + draw EXPORT
             </Link>
           </div>
 
@@ -54,6 +74,14 @@ export default function Home() {
               className="inline-block px-6 py-3 bg-indigo-600 text-white font-semibold rounded-md shadow hover:bg-indigo-700 transition duration-200"
             >
               + draw2
+            </Link>
+          </div>
+          <div>
+            <Link
+              href="/drawing"
+              className="inline-block px-6 py-3 bg-indigo-600 text-white font-semibold rounded-md shadow hover:bg-indigo-700 transition duration-200"
+            >
+              + New Drawing
             </Link>
           </div>
 

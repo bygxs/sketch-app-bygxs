@@ -1,4 +1,3 @@
-
 // src/app/draw2/page.tsx
 
 "use client";
@@ -167,12 +166,37 @@ export default function DrawingPage() {
     setPenColor(e.target.value);
   };
 
+  /**
+   * Flattens the canvas by drawing the background first and then the content
+   * @returns void
+   * This function captures the current drawing and adds it to the background
+   */
+  const flattenCanvas = () => {
+    if (!canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    // Draw background first
+    ctx.fillStyle = canvasColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw the existing image over it
+    const tempImg = new Image();
+    tempImg.src = canvas.toDataURL("image/png"); // Capture current drawing
+    tempImg.onload = () => {
+      ctx.drawImage(tempImg, 0, 0, canvas.width, canvas.height);
+    };
+  };
+
+  /**
+   * Save the current drawing as an SVG containing the PNG image
+   */
   const saveAsSVG = () => {
     if (!canvasRef.current) return;
     const canvas = canvasRef.current;
-    const dataURL = canvas.toDataURL("image/png");
+    const dataURL = canvas.toDataURL("image/png"); // Capture current drawing as PNG
 
-    // Create SVG with embedded background
+    // Create SVG with embedded background and PNG image
     const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
       <svg xmlns="http://www.w3.org/2000/svg" 
            xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -180,30 +204,24 @@ export default function DrawingPage() {
            height="${canvas.height}">
         <rect width="100%" height="100%" fill="${canvasColor}"/>
 
-        /* 	1.	Ensure the PNG covers the full canvas before saving by redrawing the background.
-	2.	Explicitly set preserveAspectRatio="none" in the <image> tag to stretch it edge-to-edge */
-  
+        <!-- Embedding the PNG image -->
         <image xlink:href="${dataURL}" width="100%" height="100%" preserveAspectRatio="none"/>
       </svg>`;
 
-    // Universal mobile handling
+    // Mobile handling for SVG download
     if (/(iPhone|iPad|iPod|Android)/i.test(navigator.userAgent)) {
-      // Solution 1: Direct file open with user guidance
       const mobileUrl = URL.createObjectURL(
         new Blob([svgContent], { type: "image/svg+xml" })
       );
       const newWindow = window.open(mobileUrl, "_blank");
 
-      // Fallback if popup blocked
       if (!newWindow) {
-        // Solution 2: Create temporary link with click simulation
         const link = document.createElement("a");
         link.href = mobileUrl;
         link.target = "_blank";
         link.style.display = "none";
         document.body.appendChild(link);
 
-        // Show iOS-specific instructions
         if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
           alert(
             '1. Tap the share icon\n2. Select "Save to Files"\n3. Choose location'
@@ -213,10 +231,9 @@ export default function DrawingPage() {
         document.body.removeChild(link);
       }
 
-      // Cleanup after delay
       setTimeout(() => URL.revokeObjectURL(mobileUrl), 30000);
     } else {
-      // Desktop download
+      // Desktop download for SVG
       const link = document.createElement("a");
       link.download = "drawing.svg";
       link.href = URL.createObjectURL(
@@ -230,24 +247,13 @@ export default function DrawingPage() {
   return (
     <div className="h-screen flex flex-col">
       {/* Canvas Area */}
-      {/* 
-        Canvas Container 
-        - Uses padding-bottom to account for fixed toolbar height + safe area
-        - Applies dynamic background color from state
-      */}
       <div
         className="flex-1 relative pb-[84px]"
         style={{
           backgroundColor: canvasColor,
-          // Safari/iOS fix: Adds bottom padding for home indicator
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
-        {/* 
-          Canvas Element 
-          - Uses touch-none to prevent default touch behaviors
-          - Full width/height of container
-        */}
         <canvas
           ref={canvasRef}
           className="w-full h-full touch-none"
@@ -260,18 +266,11 @@ export default function DrawingPage() {
         />
       </div>
 
-      {/* 
-        Fixed Bottom Toolbar 
-        - Uses fixed positioning to stay visible
-        - Accounts for iOS home indicator with safe-area-inset
-        - Height matches container padding-bottom (84px)
-      */}
+      {/* Fixed Bottom Toolbar */}
       <div
         className="fixed bottom-0 left-0 right-0 p-4 bg-gray-100 border-t flex gap-4 items-center justify-center"
         style={{
-          // Safari/iOS fix: Adds bottom padding for home indicator
           paddingBottom: "env(safe-area-inset-bottom)",
-          // Explicit height matching container's padding-bottom
           height: "84px",
         }}
       >
@@ -284,7 +283,6 @@ export default function DrawingPage() {
             value={penColor}
             onChange={handlePenColorChange}
           />
-
           <div
             onClick={() => setSelectedTool("pen")}
             className={`p-2 rounded-lg ${
@@ -295,7 +293,7 @@ export default function DrawingPage() {
           </div>
         </label>
 
-        {/* Canvas Color Picker (existing working version) */}
+        {/* Canvas Color Picker */}
         <label className="relative cursor-pointer">
           <input
             type="color"
@@ -309,7 +307,7 @@ export default function DrawingPage() {
           </div>
         </label>
 
-        {/* Eraser Tool (unchanged) */}
+        {/* Eraser Tool */}
         <button
           onClick={() => setSelectedTool("eraser")}
           className={`p-2 rounded-lg ${
@@ -322,7 +320,7 @@ export default function DrawingPage() {
         {/* Save Button */}
         <button
           onClick={saveAsSVG}
-          onTouchEnd={saveAsSVG} // Mobile touch support
+          onTouchEnd={saveAsSVG}
           className="p-2 rounded-lg bg-white hover:bg-gray-50"
         >
           <SaveIcon />
