@@ -49,7 +49,7 @@ export default function Home() {
               + ArtTrueArt
             </Link>
           </div>
-
+{/* 
           <div>
             <Link
               href="/draw2flattened"
@@ -85,6 +85,7 @@ export default function Home() {
               + draw2
             </Link>
           </div>
+
           <div>
             <Link
               href="/drawing"
@@ -93,7 +94,7 @@ export default function Home() {
               + New Drawing
             </Link>
           </div>
-
+ */}
           {/* Notebooks Section */}
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
             Drawings
